@@ -9,7 +9,256 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      guidance_schedule: {
+        Row: {
+          created_at: string | null
+          id: string
+          lecturer_id: string
+          notes: string | null
+          scheduled_date: string
+          status: string | null
+          student_id: string
+          thesis_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          lecturer_id: string
+          notes?: string | null
+          scheduled_date: string
+          status?: string | null
+          student_id: string
+          thesis_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          lecturer_id?: string
+          notes?: string | null
+          scheduled_date?: string
+          status?: string | null
+          student_id?: string
+          thesis_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guidance_schedule_lecturer_id_fkey"
+            columns: ["lecturer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guidance_schedule_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guidance_schedule_thesis_id_fkey"
+            columns: ["thesis_id"]
+            isOneToOne: false
+            referencedRelation: "thesis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          sender_id: string
+          thesis_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          sender_id: string
+          thesis_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          sender_id?: string
+          thesis_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_thesis_id_fkey"
+            columns: ["thesis_id"]
+            isOneToOne: false
+            referencedRelation: "thesis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          department: string | null
+          email: string
+          full_name: string
+          id: string
+          nim_nidn: string | null
+          phone: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          department?: string | null
+          email: string
+          full_name: string
+          id: string
+          nim_nidn?: string | null
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          department?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          nim_nidn?: string | null
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      submissions: {
+        Row: {
+          comments: string | null
+          created_at: string | null
+          file_name: string | null
+          file_url: string | null
+          id: string
+          status: Database["public"]["Enums"]["thesis_status"] | null
+          student_id: string
+          thesis_id: string
+          title: string
+          type: Database["public"]["Enums"]["submission_type"]
+          updated_at: string | null
+          version: number | null
+        }
+        Insert: {
+          comments?: string | null
+          created_at?: string | null
+          file_name?: string | null
+          file_url?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["thesis_status"] | null
+          student_id: string
+          thesis_id: string
+          title: string
+          type: Database["public"]["Enums"]["submission_type"]
+          updated_at?: string | null
+          version?: number | null
+        }
+        Update: {
+          comments?: string | null
+          created_at?: string | null
+          file_name?: string | null
+          file_url?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["thesis_status"] | null
+          student_id?: string
+          thesis_id?: string
+          title?: string
+          type?: Database["public"]["Enums"]["submission_type"]
+          updated_at?: string | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "submissions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "submissions_thesis_id_fkey"
+            columns: ["thesis_id"]
+            isOneToOne: false
+            referencedRelation: "thesis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      thesis: {
+        Row: {
+          approved_at: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          keywords: string[] | null
+          lecturer_id: string | null
+          status: Database["public"]["Enums"]["thesis_status"] | null
+          student_id: string
+          submitted_at: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          keywords?: string[] | null
+          lecturer_id?: string | null
+          status?: Database["public"]["Enums"]["thesis_status"] | null
+          student_id: string
+          submitted_at?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          keywords?: string[] | null
+          lecturer_id?: string | null
+          status?: Database["public"]["Enums"]["thesis_status"] | null
+          student_id?: string
+          submitted_at?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "thesis_lecturer_id_fkey"
+            columns: ["lecturer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "thesis_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +267,15 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      submission_type: "proposal" | "chapter" | "final" | "revision"
+      thesis_status:
+        | "draft"
+        | "submitted"
+        | "under_review"
+        | "approved"
+        | "rejected"
+        | "revision_needed"
+      user_role: "student" | "lecturer" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +390,17 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      submission_type: ["proposal", "chapter", "final", "revision"],
+      thesis_status: [
+        "draft",
+        "submitted",
+        "under_review",
+        "approved",
+        "rejected",
+        "revision_needed",
+      ],
+      user_role: ["student", "lecturer", "admin"],
+    },
   },
 } as const

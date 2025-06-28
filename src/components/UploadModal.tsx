@@ -8,16 +8,24 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, FileText, X } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import type { Database } from "@/integrations/supabase/types";
+
+type SubmissionType = Database['public']['Enums']['submission_type'];
 
 interface UploadModalProps {
   isOpen: boolean;
   onClose: () => void;
+  thesisId?: string;
 }
 
-export const UploadModal = ({ isOpen, onClose }: UploadModalProps) => {
+export const UploadModal = ({ isOpen, onClose, thesisId }: UploadModalProps) => {
+  const { user } = useAuth();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [fileType, setFileType] = useState("");
-  const [description, setDescription] = useState("");
+  const [fileType, setFileType] = useState<SubmissionType>("proposal");
+  const [title, setTitle] = useState("");
+  const [comments, setComments] = useState("");
   const [isUploading, setIsUploading] = useState(false);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,22 +49,61 @@ export const UploadModal = ({ isOpen, onClose }: UploadModalProps) => {
   };
 
   const handleUpload = async () => {
-    if (!selectedFile || !fileType) {
-      toast.error("Pilih file dan jenis dokumen terlebih dahulu");
+    if (!selectedFile || !fileType || !title.trim() || !user || !thesisId) {
+      toast.error("Lengkapi semua field yang diperlukan");
       return;
     }
 
     setIsUploading(true);
     
-    // Simulate upload process
-    setTimeout(() => {
+    try {
+      // Upload file to storage
+      const fileExt = selectedFile.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('thesis-files')
+        .upload(fileName, selectedFile);
+
+      if (uploadError) {
+        toast.error("Gagal upload file");
+        return;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('thesis-files')
+        .getPublicUrl(fileName);
+
+      // Save submission record
+      const { error: dbError } = await supabase
+        .from('submissions')
+        .insert({
+          thesis_id: thesisId,
+          student_id: user.id,
+          type: fileType,
+          title: title.trim(),
+          file_url: publicUrl,
+          file_name: selectedFile.name,
+          comments: comments.trim() || null,
+        });
+
+      if (dbError) {
+        toast.error("Gagal menyimpan data submission");
+        return;
+      }
+
       toast.success("File berhasil diupload!");
-      setIsUploading(false);
       setSelectedFile(null);
-      setFileType("");
-      setDescription("");
+      setFileType("proposal");
+      setTitle("");
+      setComments("");
       onClose();
-    }, 2000);
+    } catch (error) {
+      toast.error("Terjadi kesalahan saat upload");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const removeFile = () => {
@@ -77,6 +124,32 @@ export const UploadModal = ({ isOpen, onClose }: UploadModalProps) => {
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Title Input */}
+          <div className="space-y-2">
+            <Label>Judul Submission</Label>
+            <Input
+              placeholder="Masukkan judul submission"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          </div>
+
+          {/* File Type Selection */}
+          <div className="space-y-2">
+            <Label>Jenis Dokumen</Label>
+            <Select value={fileType} onValueChange={(value: SubmissionType) => setFileType(value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Pilih jenis dokumen" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="proposal">Proposal Skripsi</SelectItem>
+                <SelectItem value="chapter">Bab/Chapter</SelectItem>
+                <SelectItem value="final">Draft Final</SelectItem>
+                <SelectItem value="revision">Revisi</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* File Upload Area */}
           <div className="space-y-2">
             <Label>Pilih File</Label>
@@ -118,34 +191,13 @@ export const UploadModal = ({ isOpen, onClose }: UploadModalProps) => {
             )}
           </div>
 
-          {/* File Type Selection */}
-          <div className="space-y-2">
-            <Label>Jenis Dokumen</Label>
-            <Select value={fileType} onValueChange={setFileType}>
-              <SelectTrigger>
-                <SelectValue placeholder="Pilih jenis dokumen" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="proposal">Proposal Skripsi</SelectItem>
-                <SelectItem value="bab1">Bab 1 - Pendahuluan</SelectItem>
-                <SelectItem value="bab2">Bab 2 - Tinjauan Pustaka</SelectItem>
-                <SelectItem value="bab3">Bab 3 - Metodologi</SelectItem>
-                <SelectItem value="bab4">Bab 4 - Hasil dan Pembahasan</SelectItem>
-                <SelectItem value="bab5">Bab 5 - Kesimpulan</SelectItem>
-                <SelectItem value="full">Draft Lengkap</SelectItem>
-                <SelectItem value="revision">Revisi</SelectItem>
-                <SelectItem value="other">Lainnya</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Description */}
+          {/* Comments */}
           <div className="space-y-2">
             <Label>Catatan (Opsional)</Label>
             <Textarea
               placeholder="Tambahkan catatan atau deskripsi mengenai file ini..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              value={comments}
+              onChange={(e) => setComments(e.target.value)}
               rows={3}
             />
           </div>
@@ -157,7 +209,7 @@ export const UploadModal = ({ isOpen, onClose }: UploadModalProps) => {
             </Button>
             <Button 
               onClick={handleUpload} 
-              disabled={isUploading || !selectedFile || !fileType}
+              disabled={isUploading || !selectedFile || !fileType || !title.trim()}
               className="flex-1 bg-blue-600 hover:bg-blue-700"
             >
               {isUploading ? "Uploading..." : "Upload File"}
