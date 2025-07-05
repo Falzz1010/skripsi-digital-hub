@@ -42,16 +42,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching profile:', error);
+        // If profile doesn't exist, don't set error state
+        if (error.code !== 'PGRST116') {
+          setProfile(null);
+        }
         return;
       }
 
       setProfile(data);
     } catch (error) {
       console.error('Error fetching profile:', error);
+      setProfile(null);
     }
   };
 
