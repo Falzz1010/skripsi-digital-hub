@@ -9,6 +9,41 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      api_usage: {
+        Row: {
+          calls_count: number | null
+          created_at: string | null
+          date: string | null
+          endpoint: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          calls_count?: number | null
+          created_at?: string | null
+          date?: string | null
+          endpoint: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          calls_count?: number | null
+          created_at?: string | null
+          date?: string | null
+          endpoint?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_usage_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       guidance_schedule: {
         Row: {
           created_at: string | null
@@ -264,7 +299,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_new_api_key: {
+        Args: { user_uuid: string }
+        Returns: string
+      }
     }
     Enums: {
       submission_type: "proposal" | "chapter" | "final" | "revision"
