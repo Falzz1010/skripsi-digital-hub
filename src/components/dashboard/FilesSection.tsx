@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   FileText, 
@@ -13,7 +14,9 @@ import {
   Eye,
   CheckCircle,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Bot,
+  Sparkles
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +30,9 @@ export const FilesSection = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [aiAnalysis, setAiAnalysis] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<any>(null);
 
   useEffect(() => {
     fetchFiles();
@@ -106,6 +112,36 @@ export const FilesSection = () => {
       case 'revision_needed': return 'Perlu Revisi';
       case 'rejected': return 'Ditolak';
       default: return 'Draft';
+    }
+  };
+
+  const generateAIAnalysis = async (file: any) => {
+    try {
+      setAiLoading(true);
+      setSelectedFile(file);
+      
+      const { data } = await supabase.functions.invoke('ai-assistant', {
+        body: {
+          message: `Analisis file berikut dan berikan rekomendasi untuk perbaikan: ${file.title}. Status saat ini: ${file.status}. ${file.comments ? 'Komentar sebelumnya: ' + file.comments : ''}`,
+          context: {
+            fileName: file.title,
+            status: file.status,
+            comments: file.comments,
+            fileType: file.type,
+            version: file.version
+          },
+          type: 'file_review'
+        }
+      });
+
+      if (data?.response) {
+        setAiAnalysis(data.response);
+      }
+    } catch (error) {
+      console.error('Error generating AI analysis:', error);
+      toast.error('Gagal menganalisis file dengan AI');
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -253,6 +289,13 @@ export const FilesSection = () => {
                           <Download className="h-4 w-4" />
                         </Button>
                       )}
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => generateAIAnalysis(file)}
+                      >
+                        <Bot className="h-4 w-4" />
+                      </Button>
                       <Button variant="outline" size="sm">
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -270,6 +313,39 @@ export const FilesSection = () => {
           ))
         )}
       </div>
+
+      {/* AI Analysis Modal */}
+      {selectedFile && aiAnalysis && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Sparkles className="h-5 w-5 text-purple-500" />
+              <span>AI Analysis: {selectedFile.title}</span>
+            </CardTitle>
+            <CardDescription>Analisis dan rekomendasi dari AI</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {aiLoading ? (
+              <div className="flex items-center space-x-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-500"></div>
+                <span className="text-sm text-muted-foreground">AI sedang menganalisis file...</span>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                  <p className="text-sm whitespace-pre-wrap">{aiAnalysis}</p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setSelectedFile(null)}
+                >
+                  Tutup
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <UploadModal 
         isOpen={showUploadModal}
