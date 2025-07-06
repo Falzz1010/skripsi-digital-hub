@@ -1,20 +1,23 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { GraduationCap, Bell, Menu } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { BookOpen, FileText, MessageSquare, Calendar, Upload, CheckCircle, Clock, Users, GraduationCap, Bell } from "lucide-react";
-import { LoginModal } from "@/components/LoginModal";
-import { DashboardStudent } from "@/components/DashboardStudent";
-import { DashboardLecturer } from "@/components/DashboardLecturer";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/useAuth";
+import { AppSidebar } from "@/components/AppSidebar";
+import { OverviewSection } from "@/components/dashboard/OverviewSection";
+import { FilesSection } from "@/components/dashboard/FilesSection";
+import { ChatSection } from "@/components/dashboard/ChatSection";
+import { ScheduleSection } from "@/components/dashboard/ScheduleSection";
+import { StudentsSection } from "@/components/dashboard/StudentsSection";
+import { ReviewsSection } from "@/components/dashboard/ReviewsSection";
+import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
 
 const Index = () => {
   const { user, profile, loading, signOut, refreshProfile } = useAuth();
   const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useState("overview");
 
   useEffect(() => {
     if (!loading && !user) {
@@ -83,43 +86,76 @@ const Index = () => {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-secondary/10">
-      <header className="bg-card border-b border-border shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-3">
-            <div className="bg-gradient-to-r from-primary to-secondary p-2 rounded-lg shadow-lg">
-              <GraduationCap className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">SISKRIPSI</h1>
-              <p className="text-sm text-muted-foreground">Sistem Informasi Skripsi</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-4">
-            <Bell className="h-5 w-5 text-muted-foreground cursor-pointer hover:text-primary transition-colors" />
-            <Avatar>
-              <AvatarFallback className="bg-primary/10 text-primary">
-                {profile.full_name.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="text-sm">
-              <p className="font-medium text-foreground">{profile.full_name}</p>
-              <p className="text-muted-foreground capitalize">{profile.role}</p>
-            </div>
-            <Button variant="outline" onClick={handleLogout}>
-              Logout
-            </Button>
-          </div>
-        </div>
-      </header>
+  const renderMainContent = () => {
+    if (profile.role === 'admin') {
+      return <AdminDashboard activeSection={activeSection} />;
+    }
 
-      {profile.role === 'student' ? (
-        <DashboardStudent />
-      ) : (
-        <DashboardLecturer />
-      )}
-    </div>
+    switch (activeSection) {
+      case 'overview':
+        return <OverviewSection onNavigate={setActiveSection} />;
+      case 'files':
+        return <FilesSection />;
+      case 'chat':
+        return <ChatSection />;
+      case 'schedule':
+        return <ScheduleSection />;
+      case 'students':
+        return <StudentsSection onNavigate={setActiveSection} />;
+      case 'reviews':
+        return <ReviewsSection />;
+      default:
+        return <OverviewSection onNavigate={setActiveSection} />;
+    }
+  };
+
+  return (
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-muted/30 to-secondary/10">
+        <AppSidebar onNavigate={setActiveSection} activeSection={activeSection} />
+        
+        <SidebarInset className="flex-1">
+          {/* Header */}
+          <header className="bg-card border-b border-border shadow-sm sticky top-0 z-10">
+            <div className="flex items-center justify-between px-4 py-3">
+              <div className="flex items-center space-x-3">
+                <SidebarTrigger />
+                <div className="flex items-center space-x-2">
+                  <div className="bg-gradient-to-r from-primary to-secondary p-1.5 rounded-lg">
+                    <GraduationCap className="h-5 w-5 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h1 className="text-lg font-bold">SISKRIPSI</h1>
+                    <p className="text-xs text-muted-foreground">Sistem Informasi Skripsi</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <Bell className="h-5 w-5 text-muted-foreground cursor-pointer hover:text-primary transition-colors" />
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                    {profile.full_name.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="text-sm hidden sm:block">
+                  <p className="font-medium text-foreground">{profile.full_name}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{profile.role}</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={handleLogout}>
+                  Logout
+                </Button>
+              </div>
+            </div>
+          </header>
+
+          {/* Main Content */}
+          <main className="flex-1 p-6">
+            {renderMainContent()}
+          </main>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   );
 };
 
