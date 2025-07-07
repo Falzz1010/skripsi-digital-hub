@@ -140,8 +140,8 @@ export const RealTimeChat = ({ thesisId, chatPartner }: RealTimeChatProps) => {
     return (
       <Card className="h-[600px] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-          <p className="text-gray-600">Memuat chat...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-muted-foreground">Memuat chat...</p>
         </div>
       </Card>
     );
@@ -153,18 +153,18 @@ export const RealTimeChat = ({ thesisId, chatPartner }: RealTimeChatProps) => {
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Avatar>
-              <AvatarFallback className="bg-green-100 text-green-700">
+              <AvatarFallback className="bg-primary/10 text-primary">
                 {chatPartner.name.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div>
               <h3 className="font-semibold">{chatPartner.name}</h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 {chatPartner.role === 'lecturer' ? 'Dosen Pembimbing' : 'Mahasiswa'}
               </p>
             </div>
           </div>
-          <Badge variant="secondary" className="bg-green-100 text-green-700">
+          <Badge variant="secondary" className="bg-primary/10 text-primary">
             Online
           </Badge>
         </CardTitle>
@@ -182,13 +182,13 @@ export const RealTimeChat = ({ thesisId, chatPartner }: RealTimeChatProps) => {
                 <div
                   className={`p-3 rounded-lg ${
                     msg.sender_id === user?.id
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-900'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-foreground'
                   }`}
                 >
                   <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   {new Date(msg.created_at!).toLocaleTimeString('id-ID', { 
                     hour: '2-digit', 
                     minute: '2-digit' 
@@ -203,8 +203,8 @@ export const RealTimeChat = ({ thesisId, chatPartner }: RealTimeChatProps) => {
                 <AvatarFallback
                   className={
                     msg.sender.role === 'lecturer'
-                      ? 'bg-green-100 text-green-700 text-xs'
-                      : 'bg-blue-100 text-blue-700 text-xs'
+                      ? 'bg-primary/10 text-primary text-xs'
+                      : 'bg-secondary/10 text-secondary-foreground text-xs'
                   }
                 >
                   {msg.sender.full_name.charAt(0).toUpperCase()}
