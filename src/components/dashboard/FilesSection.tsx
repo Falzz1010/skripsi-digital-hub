@@ -33,6 +33,7 @@ export const FilesSection = () => {
   const [aiAnalysis, setAiAnalysis] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
+  const [studentThesisId, setStudentThesisId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchFiles();
@@ -48,6 +49,21 @@ export const FilesSection = () => {
         fetchFiles();
       })
       .subscribe();
+
+    // For students we need the thesis id once so that we can upload new submissions
+    if (profile?.role === 'student') {
+      (async () => {
+        const { data: thesis, error } = await supabase
+          .from('thesis')
+          .select('id')
+          .eq('student_id', profile.id)
+          .maybeSingle();
+
+        if (!error && thesis?.id) {
+          setStudentThesisId(thesis.id);
+        }
+      })();
+    }
 
     return () => {
       supabase.removeChannel(channel);
@@ -350,6 +366,7 @@ export const FilesSection = () => {
       <UploadModal 
         isOpen={showUploadModal}
         onClose={() => setShowUploadModal(false)}
+        thesisId={studentThesisId ?? undefined}
       />
     </div>
   );
