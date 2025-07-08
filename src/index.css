@@ -98,6 +98,23 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+/* Custom scrollbar for better cross-browser styling */
+@layer utilities {
+  .scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground)) transparent;
+  }
+  .scrollbar::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+  .scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/50 rounded-lg;
+  }
+  .scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground;
   }
 }
