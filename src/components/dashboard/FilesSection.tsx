@@ -260,73 +260,75 @@ export const FilesSection = () => {
             </CardContent>
           </Card>
         ) : (
-          filteredFiles.map((file) => (
-            <Card key={file.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex-shrink-0">
-                      <FileText className="h-10 w-10 text-primary" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h4 className="font-semibold text-lg truncate">{file.title}</h4>
-                      {file.file_name && (
-                        <p className="text-sm text-muted-foreground truncate">{file.file_name}</p>
-                      )}
-                      <div className="flex items-center space-x-4 mt-2">
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(file.created_at).toLocaleDateString('id-ID')}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Versi {file.version || 1}
-                        </p>
-                        {profile?.role === 'lecturer' && file.thesis?.student && (
-                          <p className="text-sm text-muted-foreground">
-                            {file.thesis.student.full_name}
-                          </p>
+          <div className="max-h-[450px] overflow-y-auto scrollbar">
+            {filteredFiles.map((file) => (
+              <Card key={file.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex-shrink-0">
+                        <FileText className="h-10 w-10 text-primary" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-semibold text-lg truncate">{file.title}</h4>
+                        {file.file_name && (
+                          <p className="text-sm text-muted-foreground truncate">{file.file_name}</p>
                         )}
+                        <div className="flex items-center space-x-4 mt-2">
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(file.created_at).toLocaleDateString('id-ID')}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Versi {file.version || 1}
+                          </p>
+                          {profile?.role === 'lecturer' && file.thesis?.student && (
+                            <p className="text-sm text-muted-foreground">
+                              {file.thesis.student.full_name}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-2">
+                        {getStatusIcon(file.status)}
+                        <Badge className={getStatusColor(file.status)}>
+                          {getStatusText(file.status)}
+                        </Badge>
+                      </div>
+                      <div className="flex space-x-2">
+                        {file.file_url && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownload(file.file_url, file.file_name)}
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => generateAIAnalysis(file)}
+                        >
+                          <Bot className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <Eye className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="flex items-center space-x-2">
-                      {getStatusIcon(file.status)}
-                      <Badge className={getStatusColor(file.status)}>
-                        {getStatusText(file.status)}
-                      </Badge>
+                  {file.comments && (
+                    <div className="mt-4 p-3 bg-muted rounded-lg">
+                      <p className="text-sm font-medium mb-1">Komentar:</p>
+                      <p className="text-sm text-muted-foreground">{file.comments}</p>
                     </div>
-                    <div className="flex space-x-2">
-                      {file.file_url && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDownload(file.file_url, file.file_name)}
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => generateAIAnalysis(file)}
-                      >
-                        <Bot className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-                {file.comments && (
-                  <div className="mt-4 p-3 bg-muted rounded-lg">
-                    <p className="text-sm font-medium mb-1">Komentar:</p>
-                    <p className="text-sm text-muted-foreground">{file.comments}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         )}
       </div>
 

@@ -168,7 +168,7 @@ export const ChatSection = () => {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="max-h-[450px] overflow-y-auto">
+            <div className="max-h-[450px] overflow-y-auto scrollbar">
               {filteredChats.length === 0 ? (
                 <div className="p-4 text-center text-muted-foreground">
                   <MessageSquare className="h-8 w-8 mx-auto mb-2" />
