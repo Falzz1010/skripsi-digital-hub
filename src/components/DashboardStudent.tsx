@@ -10,25 +10,29 @@ import { FileText, Upload, MessageSquare, Calendar, CheckCircle, Clock, AlertCir
 import { UploadModal } from "@/components/UploadModal";
 import { ChatBox } from "@/components/ChatBox";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 export const DashboardStudent = () => {
+  const { user } = useAuth();
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [studentThesisId, setStudentThesisId] = useState<string | null>(null);
 
   useEffect(() => {
     // Ambil thesisId mahasiswa dari Supabase
-    (async () => {
-      const { data: thesis, error } = await supabase
-        .from('thesis')
-        .select('id')
-        .eq('student_id', '20210123456') // Ganti dengan id user login jika ada
-        .maybeSingle();
-      if (!error && thesis?.id) {
-        setStudentThesisId(thesis.id);
-      }
-    })();
-  }, []);
+    if (user?.id) {
+      (async () => {
+        const { data: thesis, error } = await supabase
+          .from('thesis')
+          .select('id')
+          .eq('student_id', user.id)
+          .maybeSingle();
+        if (!error && thesis?.id) {
+          setStudentThesisId(thesis.id);
+        }
+      })();
+    }
+  }, [user?.id]);
 
   const thesisProgress = 65;
   

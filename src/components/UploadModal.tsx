@@ -49,49 +49,116 @@ export const UploadModal = ({ isOpen, onClose, thesisId }: UploadModalProps) => 
   };
 
   const handleUpload = async () => {
-    if (!selectedFile || !fileType || !title.trim() || !user || !thesisId) {
-      toast.error("Lengkapi semua field yang diperlukan");
+    console.log('Debug - Starting upload with:', {
+      selectedFile: selectedFile?.name,
+      fileType,
+      title: title.trim(),
+      user: user?.id,
+      thesisId
+    });
+
+    // Debug: cek field mana yang kosong
+    const missingFields = [];
+    if (!selectedFile) missingFields.push('File');
+    if (!fileType) missingFields.push('Jenis Dokumen');
+    if (!title.trim()) missingFields.push('Judul Submission');
+    if (!user) missingFields.push('User');
+
+    if (missingFields.length > 0) {
+      toast.error(`Field yang belum diisi: ${missingFields.join(', ')}`);
+      console.log('Debug - Missing fields:', {
+        selectedFile: !!selectedFile,
+        fileType,
+        title: title.trim(),
+        user: !!user,
+        thesisId
+      });
       return;
     }
 
     setIsUploading(true);
     
     try {
+      // Jika thesisId belum ada, buat thesis record baru
+      let finalThesisId = thesisId;
+      if (!thesisId && user) {
+        const { data: newThesis, error: thesisError } = await supabase
+          .from('thesis')
+          .insert({
+            student_id: user.id,
+            title: 'Skripsi Mahasiswa', // Default title
+            status: 'draft',
+            lecturer_id: null, // Tambahkan lecturer_id
+            description: 'Skripsi mahasiswa', // Tambahkan description
+            keywords: [], // Tambahkan keywords
+            submitted_at: null, // Tambahkan submitted_at
+            approved_at: null, // Tambahkan approved_at
+            created_at: null, // Tambahkan created_at
+            updated_at: null, // Tambahkan updated_at
+          })
+          .select('id')
+          .single();
+
+        if (thesisError) {
+          toast.error("Gagal membuat record thesis");
+          return;
+        }
+        finalThesisId = newThesis.id;
+      }
+
       // Upload file to storage
       const fileExt = selectedFile.name.split('.').pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      
+      console.log('Debug - Uploading file:', fileName);
       
       const { error: uploadError } = await supabase.storage
         .from('thesis-files')
         .upload(fileName, selectedFile);
 
       if (uploadError) {
+        console.error('Debug - Upload error:', uploadError);
         toast.error("Gagal upload file");
         return;
       }
+
+      console.log('Debug - File uploaded successfully');
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('thesis-files')
         .getPublicUrl(fileName);
 
+      console.log('Debug - Public URL:', publicUrl);
+
       // Save submission record
+      const submissionData = {
+        thesis_id: finalThesisId,
+        student_id: user.id,
+        type: fileType,
+        title: title.trim(),
+        file_url: publicUrl,
+        file_name: selectedFile.name,
+        comments: comments.trim() || null,
+        status: 'submitted' as const, // Tambahkan status default
+        version: 1, // Tambahkan version default
+        created_at: null, // Tambahkan created_at
+        updated_at: null, // Tambahkan updated_at
+      };
+      
+      console.log('Debug - Saving submission:', submissionData);
+      
       const { error: dbError } = await supabase
         .from('submissions')
-        .insert({
-          thesis_id: thesisId,
-          student_id: user.id,
-          type: fileType,
-          title: title.trim(),
-          file_url: publicUrl,
-          file_name: selectedFile.name,
-          comments: comments.trim() || null,
-        });
+        .insert(submissionData);
 
       if (dbError) {
+        console.error('Debug - Database error:', dbError);
         toast.error("Gagal menyimpan data submission");
         return;
       }
+
+      console.log('Debug - Submission saved successfully');
 
       toast.success("File berhasil diupload!");
       setSelectedFile(null);
