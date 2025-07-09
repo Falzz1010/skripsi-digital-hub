@@ -9,47 +9,113 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { FileText, Upload, MessageSquare, Calendar, CheckCircle, Clock, AlertCircle, Download } from "lucide-react";
 import { UploadModal } from "@/components/UploadModal";
 import { ChatBox } from "@/components/ChatBox";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const DashboardStudent = () => {
-  const { user } = useAuth();
+  const { profile } = useAuth();
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [studentThesisId, setStudentThesisId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [thesisData, setThesisData] = useState<any>(null);
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [recentFiles, setRecentFiles] = useState<any[]>([]);
+  const [timeline, setTimeline] = useState<any[]>([]);
 
   useEffect(() => {
-    // Ambil thesisId mahasiswa dari Supabase
-    if (user?.id) {
-      (async () => {
-        const { data: thesis, error } = await supabase
-          .from('thesis')
-          .select('id')
-          .eq('student_id', user.id)
-          .maybeSingle();
-        if (!error && thesis?.id) {
-          setStudentThesisId(thesis.id);
-        }
-      })();
+    if (profile?.id) {
+      fetchStudentData();
+      
+      // Real-time subscription
+      const channel = supabase
+        .channel('student-dashboard')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'submissions'
+        }, () => {
+          fetchStudentData();
+        })
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'thesis'
+        }, () => {
+          fetchStudentData();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
-  }, [user?.id]);
+  }, [profile]);
 
-  const thesisProgress = 65;
-  
-  const timeline = [
-    { title: "Pengajuan Judul", status: "completed", date: "15 Jan 2024" },
-    { title: "Persetujuan Judul", status: "completed", date: "20 Jan 2024" },
-    { title: "Bab 1 - Pendahuluan", status: "completed", date: "1 Feb 2024" },
-    { title: "Bab 2 - Tinjauan Pustaka", status: "current", date: "Target: 15 Feb 2024" },
-    { title: "Bab 3 - Metodologi", status: "pending", date: "Target: 1 Mar 2024" },
-    { title: "Seminar Proposal", status: "pending", date: "Target: 15 Mar 2024" },
-  ];
+  const fetchStudentData = async () => {
+    try {
+      setLoading(true);
 
-  const recentFiles = [
-    { name: "Bab_1_Pendahuluan_v2.pdf", date: "12 Feb 2024", status: "approved", size: "2.3 MB" },
-    { name: "Proposal_Skripsi_Final.pdf", date: "5 Feb 2024", status: "revision", size: "1.8 MB" },
-    { name: "Outline_Skripsi.docx", date: "28 Jan 2024", status: "approved", size: "156 KB" },
-  ];
+      // Get thesis data
+      const { data: thesis } = await supabase
+        .from('thesis')
+        .select(`
+          *,
+          lecturer:profiles!thesis_lecturer_id_fkey(full_name, role)
+        `)
+        .eq('student_id', profile?.id)
+        .single();
+
+      if (thesis) {
+        setThesisData(thesis);
+        setStudentThesisId(thesis.id);
+      }
+
+      // Get submissions
+      const { data: submissionsData } = await supabase
+        .from('submissions')
+        .select('*')
+        .eq('student_id', profile?.id)
+        .order('created_at', { ascending: false });
+
+      setSubmissions(submissionsData || []);
+
+      // Generate recent files
+      const recentFilesData = submissionsData?.slice(0, 5).map(submission => ({
+        name: submission.file_name || submission.title,
+        date: new Date(submission.created_at).toLocaleDateString('id-ID'),
+        status: submission.status,
+        size: '2.3 MB' // Mock size for now
+      })) || [];
+
+      setRecentFiles(recentFilesData);
+
+      // Generate timeline
+      const timelineData = [
+        { title: "Pengajuan Judul", status: "completed", date: "15 Jan 2024" },
+        { title: "Persetujuan Judul", status: "completed", date: "20 Jan 2024" },
+        { title: "Bab 1 - Pendahuluan", status: "completed", date: "1 Feb 2024" },
+        { title: "Bab 2 - Tinjauan Pustaka", status: "current", date: "Target: 15 Feb 2024" },
+        { title: "Bab 3 - Metodologi", status: "pending", date: "Target: 1 Mar 2024" },
+        { title: "Seminar Proposal", status: "pending", date: "Target: 15 Mar 2024" },
+      ];
+
+      setTimeline(timelineData);
+    } catch (error) {
+      console.error('Error fetching student data:', error);
+      toast.error('Gagal memuat data dashboard');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateProgress = () => {
+    if (!submissions.length) return 0;
+    const approvedCount = submissions.filter(s => s.status === 'approved').length;
+    const totalSteps = 6; // Proposal, Bab 1-5, Final
+    return Math.round((approvedCount / totalSteps) * 100);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -71,11 +137,23 @@ export const DashboardStudent = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
+
+  const thesisProgress = calculateProgress();
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-2">Dashboard Mahasiswa</h2>
-        <p className="text-gray-600">Selamat datang kembali, Ahmad Fauzi (20210123456)</p>
+        <p className="text-gray-600">Selamat datang kembali, {profile?.full_name} ({profile?.nim_nidn})</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -95,7 +173,7 @@ export const DashboardStudent = () => {
                 <span>Progress Skripsi</span>
               </CardTitle>
               <CardDescription>
-                Judul: "Sistem Informasi Manajemen Inventori Berbasis Web dengan Metode FIFO"
+                Judul: {thesisData?.title || "Belum ada judul"}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -110,10 +188,12 @@ export const DashboardStudent = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex items-center space-x-2">
                     <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-green-100 text-green-700 text-xs">DP</AvatarFallback>
+                      <AvatarFallback className="bg-green-100 text-green-700 text-xs">
+                        {thesisData?.lecturer?.full_name?.split(' ').map((n: string) => n[0]).join('') || 'DP'}
+                      </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="text-sm font-medium">Dr. Siti Nurhaliza, M.Kom</p>
+                      <p className="text-sm font-medium">{thesisData?.lecturer?.full_name || 'Belum ditentukan'}</p>
                       <p className="text-xs text-gray-600">Dosen Pembimbing</p>
                     </div>
                   </div>
@@ -200,25 +280,32 @@ export const DashboardStudent = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentFiles.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <FileText className="h-8 w-8 text-blue-600" />
-                      <div>
-                        <h4 className="font-medium">{file.name}</h4>
-                        <p className="text-sm text-gray-600">{file.date} • {file.size}</p>
+                {recentFiles.length === 0 ? (
+                  <div className="text-center py-8">
+                    <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">Belum ada file yang diupload</p>
+                  </div>
+                ) : (
+                  recentFiles.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <FileText className="h-8 w-8 text-blue-600" />
+                        <div>
+                          <h4 className="font-medium">{file.name}</h4>
+                          <p className="text-sm text-gray-600">{file.date} • {file.size}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Badge className={getStatusColor(file.status)}>
+                          {file.status === 'approved' ? 'Disetujui' : 'Perlu Revisi'}
+                        </Badge>
+                        <Button variant="ghost" size="sm">
+                          <Download className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge className={getStatusColor(file.status)}>
-                        {file.status === 'approved' ? 'Disetujui' : 'Perlu Revisi'}
-                      </Badge>
-                      <Button variant="ghost" size="sm">
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
