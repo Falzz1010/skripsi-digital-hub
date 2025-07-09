@@ -137,17 +137,17 @@ export const OverviewSection = ({ onNavigate }: { onNavigate: (section: string) 
   };
 
   const fetchLecturerOverview = async () => {
-    // Fetch students under supervision
+    // Fetch students under supervision (termasuk yang belum ada lecturer_id)
     const { data: thesis } = await supabase
       .from('thesis')
       .select('*, student:profiles(full_name)')
-      .eq('lecturer_id', profile?.id);
+      .or(`lecturer_id.is.null,lecturer_id.eq.${profile?.id}`);
 
-    // Fetch pending submissions
+    // Fetch pending submissions (termasuk yang belum ada lecturer_id)
     const { data: submissions } = await supabase
       .from('submissions')
       .select('*, thesis!inner(lecturer_id)')
-      .eq('thesis.lecturer_id', profile?.id)
+      .or(`thesis.lecturer_id.is.null,thesis.lecturer_id.eq.${profile?.id}`)
       .eq('status', 'submitted');
 
     // Fetch upcoming meetings

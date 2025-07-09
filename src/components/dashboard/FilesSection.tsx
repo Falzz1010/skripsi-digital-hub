@@ -83,7 +83,7 @@ export const FilesSection = () => {
       if (profile?.role === 'student') {
         query = query.eq('student_id', profile.id);
       } else if (profile?.role === 'lecturer') {
-        query = query.eq('thesis.lecturer_id', profile.id);
+        query = query.or(`thesis.lecturer_id.is.null,thesis.lecturer_id.eq.${profile.id}`);
       }
 
       const { data, error } = await query;

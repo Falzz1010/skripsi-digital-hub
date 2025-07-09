@@ -53,15 +53,21 @@ export const ReviewsSection = () => {
 
   const fetchSubmissions = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('submissions')
         .select(`
           *,
           thesis:thesis_id(title, lecturer_id),
           student:student_id(full_name, nim_nidn)
         `)
-        .eq('thesis.lecturer_id', profile?.id)
         .order('created_at', { ascending: false });
+
+      // Jika dosen, ambil submissions yang belum ada lecturer_id atau yang lecturer_id-nya sama
+      if (profile?.role === 'lecturer') {
+        query = query.or(`thesis.lecturer_id.is.null,thesis.lecturer_id.eq.${profile.id}`);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setSubmissions(data || []);

@@ -88,7 +88,6 @@ export const UploadModal = ({ isOpen, onClose, thesisId }: UploadModalProps) => 
             student_id: user.id,
             title: 'Skripsi Mahasiswa', // Default title
             status: 'draft',
-            lecturer_id: null, // Tambahkan lecturer_id
             description: 'Skripsi mahasiswa', // Tambahkan description
             keywords: [], // Tambahkan keywords
             submitted_at: null, // Tambahkan submitted_at

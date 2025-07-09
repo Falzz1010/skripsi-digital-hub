@@ -97,7 +97,7 @@ export const ScheduleSection = () => {
           student_id,
           student:profiles!thesis_student_id_fkey(id, full_name, nim_nidn)
         `)
-        .eq('lecturer_id', profile?.id);
+        .or(`lecturer_id.is.null,lecturer_id.eq.${profile?.id}`);
 
       setStudents(data?.map(t => t.student) || []);
     } catch (error) {
@@ -114,7 +114,7 @@ export const ScheduleSection = () => {
         .from('thesis')
         .select('id')
         .eq('student_id', formData.student_id)
-        .eq('lecturer_id', profile?.id)
+        .or(`lecturer_id.is.null,lecturer_id.eq.${profile?.id}`)
         .single();
 
       if (!thesis) {

@@ -61,7 +61,7 @@ export const StudentsSection = ({ onNavigate }: { onNavigate: (section: string) 
           student:profiles!thesis_student_id_fkey(id, full_name, nim_nidn, email),
           submissions:submissions(id, status, created_at, type)
         `)
-        .eq('lecturer_id', profile?.id);
+        .or(`lecturer_id.is.null,lecturer_id.eq.${profile?.id}`);
 
       if (error) throw error;
 

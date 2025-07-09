@@ -73,7 +73,7 @@ export const ChatSection = () => {
           }];
         }
       } else if (profile?.role === 'lecturer') {
-        // Get all students under supervision
+        // Get all students under supervision (termasuk yang belum ada lecturer_id)
         const { data: thesisList } = await supabase
           .from('thesis')
           .select(`
@@ -81,7 +81,7 @@ export const ChatSection = () => {
             title,
             student:profiles!thesis_student_id_fkey(id, full_name, role)
           `)
-          .eq('lecturer_id', profile.id);
+          .or(`lecturer_id.is.null,lecturer_id.eq.${profile.id}`);
 
         chats = thesisList?.map(thesis => ({
           id: thesis.id,
