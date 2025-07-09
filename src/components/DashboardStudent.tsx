@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -9,10 +9,26 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { FileText, Upload, MessageSquare, Calendar, CheckCircle, Clock, AlertCircle, Download } from "lucide-react";
 import { UploadModal } from "@/components/UploadModal";
 import { ChatBox } from "@/components/ChatBox";
+import { supabase } from "@/integrations/supabase/client";
 
 export const DashboardStudent = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
+  const [studentThesisId, setStudentThesisId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Ambil thesisId mahasiswa dari Supabase
+    (async () => {
+      const { data: thesis, error } = await supabase
+        .from('thesis')
+        .select('id')
+        .eq('student_id', '20210123456') // Ganti dengan id user login jika ada
+        .maybeSingle();
+      if (!error && thesis?.id) {
+        setStudentThesisId(thesis.id);
+      }
+    })();
+  }, []);
 
   const thesisProgress = 65;
   
@@ -246,6 +262,7 @@ export const DashboardStudent = () => {
       <UploadModal 
         isOpen={showUploadModal}
         onClose={() => setShowUploadModal(false)}
+        thesisId={studentThesisId ?? undefined}
       />
     </div>
   );
